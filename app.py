@@ -8,9 +8,6 @@ import time
 import base64
 import os
 
-# ================================================================
-# 0. FONCTION IMAGE DE FOND (CLOUD-SAFE)
-# ================================================================
 def get_base64_of_bin_file(path):
     try:
         with open(path, "rb") as f:
@@ -18,9 +15,7 @@ def get_base64_of_bin_file(path):
     except Exception:
         return None
 
-# ================================================================
-# 1. CONFIGURATION PAGE
-# ================================================================
+#  CONFIGURATION PAGE
 st.set_page_config(
     page_title="BankGuard AI | Détection de Fraude",
     page_icon="🛡️",
@@ -32,9 +27,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 IMG_PATH = os.path.join(BASE_DIR, "background.jpg")
 img_base64 = get_base64_of_bin_file(IMG_PATH)
 
-# ================================================================
-# 2. CSS GLOBAL
-# ================================================================
+
+# CSS GLOBAL
 if img_base64:
     st.markdown(
         f"""
@@ -77,9 +71,8 @@ h1, h2, h3 { font-family: Segoe UI, sans-serif; }
 </style>
 """, unsafe_allow_html=True)
 
-# ================================================================
-# 3. CHARGEMENT MODÈLE (ROBUSTE)
-# ================================================================
+# CHARGEMENT MODÈLE (ROBUSTE)
+
 @st.cache_resource
 def load_model():
     try:
@@ -93,9 +86,8 @@ def load_model():
 
 pipeline_lof, feature_info, DEMO_MODE = load_model()
 
-# ================================================================
-# 4. FEATURE ENGINEERING
-# ================================================================
+# FEATURE ENGINEERING
+
 def create_features(data):
     df = pd.DataFrame([data])
 
@@ -134,9 +126,9 @@ def calculate_balances(tx, amount, old_org, old_dest):
         new_org += amount
     return new_org, new_dest
 
-# ================================================================
-# 5. INTERFACE
-# ================================================================
+
+# INTERFACE
+
 with st.sidebar:
     st.title("🛡️ BankGuard AI")
     st.markdown("---")
@@ -164,9 +156,8 @@ with col_in:
 
     analyze = st.button("Analyser la transaction")
 
-# ================================================================
-# 6. PRÉDICTION & VISUALISATION
-# ================================================================
+
+# PRÉDICTION & VISUALISATION
 if analyze:
     step = (day - 1) * 24 + hour
 
