@@ -16,9 +16,8 @@ from sklearn.covariance import EllipticEnvelope
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import precision_score, recall_score, f1_score
 
-# =============================================================================
-# 1. CONFIGURATION ET CHARGEMENT
-# =============================================================================
+# CONFIGURATION ET CHARGEMENT
+
 
 def create_advanced_features(df):
     """
@@ -26,29 +25,29 @@ def create_advanced_features(df):
     """
     df = df.copy()
    
-    # ----- 1. RATIOS CRITIQUES -----
+    # RATIOS CRITIQUES 
     df['ratio_to_orig'] = df['amount'] / (df['oldbalanceOrg'] + 1)
     df['ratio_to_dest'] = df['amount'] / (df['oldbalanceDest'] + 1)
    
-    # ----- 2. ERREURS DE BALANCE -----
+    #  ERREURS DE BALANCE 
     df['error_orig'] = np.abs((df['oldbalanceOrg'] - df['newbalanceOrig']) - df['amount'])
     df['error_dest'] = np.abs((df['newbalanceDest'] - df['oldbalanceDest']) - df['amount'])
     df['error_orig_norm'] = df['error_orig'] / (df['amount'] + 1)
     df['error_dest_norm'] = df['error_dest'] / (df['amount'] + 1)
    
-    # ----- 3. INDICATEURS -----
+    #  INDICATEURS 
     df['orig_emptied'] = ((df['newbalanceOrig'] == 0) & (df['oldbalanceOrg'] > 0)).astype(int)
     df['dest_was_zero'] = (df['oldbalanceDest'] == 0).astype(int)
     threshold_high = df['amount'].quantile(0.90)
     df['amount_very_high'] = (df['amount'] > threshold_high).astype(int)
    
-    # ----- 4. FEATURES TEMPORELLES -----
+    #  FEATURES TEMPORELLES 
     df['hour'] = df['step'] % 24
     df['is_night'] = ((df['hour'] >= 22) | (df['hour'] <= 6)).astype(int)
     df['day_of_week'] = (df['step'] // 24) % 7
     df['is_weekend'] = (df['day_of_week'] >= 5).astype(int)
    
-    # ----- 5. LOGS ET DELTAS -----
+    # LOGS ET DELTAS 
     df['amount_log'] = np.log1p(df['amount'])
     df['oldbalanceOrg_log'] = np.log1p(df['oldbalanceOrg'])
     df['oldbalanceDest_log'] = np.log1p(df['oldbalanceDest'])
@@ -59,29 +58,29 @@ def create_advanced_features(df):
 
 if __name__ == "__main__":
     print("="*60)
-    print("🚀 DÉMARRAGE DU SCRIPT D'ENTRAÎNEMENT")
+    print(" DÉMARRAGE DU SCRIPT D'ENTRAÎNEMENT")
     print("="*60)
 
-    # 1. Chargement des données
+    #  Chargement des données
     csv_file = 'CHDD.csv' # <--- VÉRIFIEZ LE NOM DE VOTRE FICHIER ICI
     try:
-        print(f"⏳ Chargement de {csv_file}...")
+        print(f" Chargement de {csv_file}...")
         df = pd.read_csv(csv_file)
     except FileNotFoundError:
-        print(f"❌ ERREUR: Le fichier '{csv_file}' est introuvable.")
+        print(f" ERREUR: Le fichier '{csv_file}' est introuvable.")
         print("   Assurez-vous qu'il est dans le dossier ou modifiez le nom dans le script.")
         sys.exit(1)
 
-    # 2. Feature Engineering
-    print("🔧 Création des features avancées...")
+    # Feature Engineering
+    print(" Création des features avancées...")
     df = create_advanced_features(df)
 
-    # 3. Échantillonnage (Pour aller plus vite et éviter les problèmes de mémoire)
+    # Échantillonnage (Pour aller plus vite et éviter les problèmes de mémoire)
     sample_size = min(100000, len(df))
-    print(f"✂️  Échantillonnage de {sample_size} lignes...")
+    print(f"  Échantillonnage de {sample_size} lignes...")
     df_sample = df.sample(n=sample_size, random_state=42)
 
-    # 4. Préparation des colonnes
+    # Préparation des colonnes
     features_base = ['type', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
     features_advanced = ['ratio_to_orig', 'ratio_to_dest', 'error_orig_norm', 'error_dest_norm',
                          'orig_emptied', 'dest_was_zero', 'amount_very_high', 'is_night', 'is_weekend',
@@ -113,12 +112,12 @@ if __name__ == "__main__":
         ('cat', categorical_transformer, cat_cols)
     ], remainder='drop')
 
-    # 6. Définition des modèles
+    #  Définition des modèles
     true_contamination = y.mean()
     contamination_adjusted = min(true_contamination * 1.5, 0.01)
     if contamination_adjusted == 0: contamination_adjusted = 0.001 # Sécurité
    
-    print(f"⚙️  Contamination ajustée: {contamination_adjusted:.5f}")
+    print(f" Contamination ajustée: {contamination_adjusted:.5f}")
 
     # On définit uniquement LOF car c'est celui utilisé par l'app (pour gagner du temps)
    
@@ -134,20 +133,20 @@ if __name__ == "__main__":
         ))
     ])
 
-    # 7. Entraînement
+    # Entraînement
     X_train = X[y == 0] # On entraîne sur les transactions normales
-    print(f"🏋️  Entraînement du modèle LOF sur {len(X_train)} transactions normales...")
+    print(f"  Entraînement du modèle LOF sur {len(X_train)} transactions normales...")
    
     pipeline_lof.fit(X_train)
-    print("✅  Modèle LOF entraîné avec succès.")
+    print(" Modèle LOF entraîné avec succès.")
 
-    # 8. Sauvegarde des fichiers critiques
+    #  Sauvegarde des fichiers critiques
     print("\n" + "="*60)
-    print("💾 SAUVEGARDE DES FICHIERS")
+    print(" SAUVEGARDE DES FICHIERS")
     print("="*60)
 
     # Sauvegarde du modèle LOF
-    print("📝 Ecriture de 'model_lof_optimized.pkl'...")
+    print(" Ecriture de 'model_lof_optimized.pkl'...")
     joblib.dump(pipeline_lof, "model_lof_optimized.pkl")
 
     # Sauvegarde des infos de features
@@ -157,8 +156,8 @@ if __name__ == "__main__":
         'cat_cols': cat_cols,
         'contamination': contamination_adjusted
     }
-    print("📝 Ecriture de 'feature_info.pkl'...")
+    print("Ecriture de 'feature_info.pkl'...")
     joblib.dump(feature_info, "feature_info.pkl")
 
-    print("\n✅ TERMINÉ ! Les fichiers sont générés et compatibles.")
-    print("👉 Vous pouvez maintenant lancer : streamlit run app.py")
+    print("\n TERMINÉ ! Les fichiers sont générés et compatibles.")
+    print(" Vous pouvez maintenant lancer : streamlit run app.py")
